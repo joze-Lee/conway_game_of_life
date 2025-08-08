@@ -50,7 +50,6 @@ def simulate(word: str = Query(..., min_length=1, description="Seed word for Con
 def health_check():
     return {"status": "OK", "message": "Conway service is running"}
 
-
 @app.post("/prompt", response_model=PromptResponse)
 def prompt_endpoint(prompt: str = Query(..., min_length=1, description="User prompt for Conway GPT Tool")):
     """
