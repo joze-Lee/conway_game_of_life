@@ -1,6 +1,6 @@
 # gpt_tool/gpt_tool.py
-
 import random
+import re
 from conway_api.conway import run_until_stable
 
 class ConwayGPTTool:
@@ -42,3 +42,25 @@ class ConwayGPTTool:
             "highest_score": results[highest_word]["score"],
             "result": results[highest_word]
         }
+
+    def handle_prompt(self, prompt: str) -> str:
+        try:
+            if "How many generations" in prompt and "word" in prompt:
+                # word = prompt.split("word")[-1].split(" ")[0].strip(" ‘'?\".")
+                match = re.search(r"[‘']([^’']+)[’']", prompt)
+                if match:
+                    word = match.group(1)
+                    print(word)  # Output: monument
+                else:
+                    return "No word found"
+                result = self.simulate_word(word)
+                return f"The word '{word}' returns {result['generations']} generations and a score of {result['score']}."
+            print(prompt.split())
+            if "Generate 3 random words" in prompt and "highest Conway score" in prompt:
+                result = self.highest_score_among_random_words(3)
+                return (f"Generated words: {', '.join(result['words'])}. "
+                        f"Highest Conway score is from '{result['highest_word']}' with a score of {result['highest_score']}.")
+
+            return "Sorry, I couldn't understand the prompt."
+        except Exception as e:
+            return f"Error processing prompt: {str(e)}"

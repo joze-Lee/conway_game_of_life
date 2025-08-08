@@ -1,7 +1,9 @@
 # conway_api/conway.py
 
-from typing import List, Tuple, Literal
+from typing import List, Literal
 import numpy as np
+from scipy.signal import convolve2d
+
 
 StateType = Literal["Static", "Oscillator", "MaxLimit", "Extinction"]
 
@@ -11,6 +13,7 @@ def word_to_ascii_binary(word: str) -> List[List[int]]:
     Converts an input word into a list of lists of bits.
     Each inner list represents the 8-bit ASCII binary for a single character.
     """
+    
     return [[int(bit) for bit in format(ord(c), '08b')] for c in word]
 
 
@@ -49,7 +52,28 @@ def seed_grid(word: str, grid_size=(60, 40)) -> np.ndarray:
     
     return grid
 
+# for more optimized apprach using convolve2d
+def next_generation(grid: np.ndarray) -> np.ndarray:
+    """
+    Computes the next generation of the grid using Conway's Game of Life rules
+    with a convolution for neighbor counting.
+    """
+    # Define the convolution kernel (3x3 with center 0)
+    kernel = np.array([[1, 1, 1],
+                       [1, 0, 1],
+                       [1, 1, 1]], dtype=np.uint8)
 
+    # Perform convolution to count neighbors
+    neighbor_count = convolve2d(grid, kernel, mode='same', boundary='fill', fillvalue=0)
+
+    # Apply rules
+    birth = (neighbor_count == 3) & (grid == 0)
+    survive = ((neighbor_count == 2) | (neighbor_count == 3)) & (grid == 1)
+
+    return (birth | survive).astype(np.uint8)
+
+
+'''
 #Tested - working fine
 def next_generation(grid: np.ndarray) -> np.ndarray:
     """
@@ -72,11 +96,12 @@ def next_generation(grid: np.ndarray) -> np.ndarray:
     survive = ((new_grid == 2) | (new_grid == 3)) & (grid == 1)
 
     return (birth | survive).astype(np.uint8)
+'''
 
 # Util
 def print_grid(grid: np.ndarray):
     for row in grid:
-        print("".join('#' if cell else '.' for cell in row))
+        print("".join('-' if cell else '@' for cell in row))
     print("\n" + "-" * grid.shape[1])
 
 
@@ -87,35 +112,38 @@ def run_until_stable(seed_word: str, max_generations: int = 1000) -> dict:
     generation_count = 0
     cumulative_score = int(np.sum(grid))
 
-    print(f"Generation {generation_count}:")
-    print_grid(grid)
+    # print(f"Generation {generation_count}:")
+    # print_grid(grid)
 
     while generation_count < max_generations:
         new_grid = next_generation(grid)
         generation_count += 1
         cumulative_score += int(np.sum(new_grid))
 
-        print(f"Generation {generation_count}:")
-        print_grid(new_grid)
+        # print(f"Generation {generation_count}:")
 
         if np.sum(new_grid) == 0:
             state: StateType = "Extinction"
             break
 
         if np.array_equal(new_grid, grid):
+            generation_count-=1
             state: StateType = "Static"
             break
+
 
         if any(np.array_equal(new_grid, past) for past in history[-9:]):
             state: StateType = "Oscillator"
             break
-
+        
         history.append(grid.copy())
         grid = new_grid
 
     else:
         state: StateType = "MaxLimit"
 
+    for i in history[-7:]:
+        print_grid(i)
     return {
         "generations": generation_count,
         "score": cumulative_score,
