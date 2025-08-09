@@ -14,14 +14,14 @@ function addMessage(text, sender) {
 // Fetch bot reply from backend
 async function fetchBotReply(promptText) {
   try {
-    const url = `http://13.51.86.244:8000/prompt?prompt=${encodeURIComponent(promptText)}`;
+    const url = `http://13.51.86.244:8000/prompt`;
     const response = await fetch(url, {
         
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      
+      body: JSON.stringify({ prompt: promptText })
     });
     if (!response.ok) {
       throw new Error(`HTTP error! Status: ${response.status}`);

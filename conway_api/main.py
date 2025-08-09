@@ -31,11 +31,23 @@ class SimulationResult(BaseModel):
 class PromptResponse(BaseModel):
     response: str
 
+class PromptRequest(BaseModel):
+    prompt: str
+
 @app.get("/simulate", response_model=SimulationResult)
 def simulate(word: str = Query(..., min_length=1, description="Seed word for Conway grid")):
     """
-    Simulates Conway's Game of Life using ASCII binary of the word as seed.
-    Returns generation count, score, and final state.
+    Simulates Conway's Game of Life using the ASCII binary representation of the input word as the seed.
+    
+    Args:
+        word (str): Seed word used to initialize the grid. Must be ASCII and at least 1 character long.
+    
+    Returns:
+        SimulationResult: Contains number of generations until stability, total cells spawned (score), and final state.
+    
+    Raises:
+        HTTPException 400: If the input word contains non-ASCII characters.
+        HTTPException 500: If an unexpected error occurs during simulation.
     """
     if not word.isascii():
         raise HTTPException(status_code=400, detail="Word must contain only ASCII characters")
@@ -51,15 +63,26 @@ def health_check():
     return {"status": "OK", "message": "Conway service is running"}
 
 @app.post("/prompt", response_model=PromptResponse)
-def prompt_endpoint(prompt: str = Query(..., min_length=1, description="User prompt for Conway GPT Tool")):
+def prompt_endpoint(request: PromptRequest):
     """
-    Accepts a user prompt, processes it via ConwayGPTTool, and returns the response string.
-    Supports prompts like:
-    - "How many generations will the word 'monument' return from the Conway tool?"
-    - "Generate 3 random words and tell me the highest Conway score."
+    Endpoint to handle user prompts via POST request.
+    
+    Processes the prompt using ConwayGPTTool and returns a response string.
+    Supported prompt examples:
+      - "How many generations will the word 'monument' return from the Conway tool?"
+      - "Generate 3 random words and tell me the highest Conway score."
+    
+    Args:
+        request (PromptRequest): JSON body containing the user prompt.
+    
+    Returns:
+        PromptResponse: JSON response containing the result string.
+    
+    Raises:
+        HTTPException: Returns 400 status with error details if prompt processing fails.
     """
     try:
-        response_text = conway_tool.handle_prompt(prompt)
+        response_text = conway_tool.handle_prompt(request.prompt)
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error processing prompt: {str(e)}")
 

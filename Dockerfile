@@ -7,11 +7,9 @@ WORKDIR /app
 # Copy project files
 COPY . /app
 
-# Install dependencies
-RUN pip install --no-cache-dir fastapi uvicorn pydantic
 
 # Install GPT tool dependencies if separate
-# (if you have a requirements.txt, use that instead)
+
 RUN pip install -r requirements.txt
 
 # Expose FastAPI port
